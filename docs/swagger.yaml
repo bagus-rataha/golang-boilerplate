@@ -28,8 +28,11 @@ definitions:
       email:
         type: string
       name:
+        maxLength: 100
+        minLength: 2
         type: string
       password:
+        maxLength: 100
         minLength: 6
         type: string
     required:
@@ -49,6 +52,8 @@ definitions:
   services.UpdateProfileInput:
     properties:
       name:
+        maxLength: 100
+        minLength: 2
         type: string
     required:
     - name
@@ -64,9 +69,9 @@ definitions:
 host: localhost:8000
 info:
   contact: {}
-  description: Simple REST API with Fiber, GORM, JWT
+  description: Production-ready REST API with Fiber, GORM, JWT, Validation
   title: Fiber API Boilerplate
-  version: "1.0"
+  version: "2.0"
 paths:
   /auth/login:
     post:

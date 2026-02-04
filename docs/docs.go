@@ -373,10 +373,13 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 },
                 "password": {
                     "type": "string",
+                    "maxLength": 100,
                     "minLength": 6
                 }
             }
@@ -402,7 +405,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         },
@@ -430,12 +435,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "2.0",
 	Host:             "localhost:8000",
 	BasePath:         "/api/v1",
 	Schemes:          []string{},
 	Title:            "Fiber API Boilerplate",
-	Description:      "Simple REST API with Fiber, GORM, JWT",
+	Description:      "Production-ready REST API with Fiber, GORM, JWT, Validation",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

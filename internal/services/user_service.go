@@ -18,7 +18,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 
 // UpdateProfileInput represents update profile request
 type UpdateProfileInput struct {
-	Name string `json:"name" validate:"required"`
+	Name string `json:"name" validate:"required,min=2,max=100"`
 }
 
 // GetProfile returns user profile

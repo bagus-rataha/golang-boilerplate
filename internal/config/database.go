@@ -20,7 +20,7 @@ func ConnectDB(cfg *Config) *gorm.DB {
 
 	// Set log level based on environment
 	logLevel := logger.Silent
-	if cfg.AppEnv == "development" {
+	if cfg.IsDevelopment() {
 		logLevel = logger.Info
 	}
 
@@ -32,11 +32,15 @@ func ConnectDB(cfg *Config) *gorm.DB {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// Auto migrate models
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		log.Fatal("Failed to migrate database:", err)
+	// Auto migrate models (development only)
+	if cfg.IsDevelopment() {
+		if err := db.AutoMigrate(&models.User{}); err != nil {
+			log.Fatal("Failed to migrate database:", err)
+		}
+		log.Println("Database connected and migrated successfully")
+	} else {
+		log.Println("Database connected (production mode - use golang-migrate for migrations)")
 	}
 
-	log.Println("Database connected and migrated successfully")
 	return db
 }

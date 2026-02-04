@@ -58,6 +58,10 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	if errors := utils.ValidateStruct(input); len(errors) > 0 {
+		return utils.ValidationErrorResponse(c, errors)
+	}
+
 	user, err := h.userService.UpdateProfile(userID, input)
 	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, err.Error())

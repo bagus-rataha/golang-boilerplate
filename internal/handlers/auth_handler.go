@@ -33,6 +33,10 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	if errors := utils.ValidateStruct(input); len(errors) > 0 {
+		return utils.ValidationErrorResponse(c, errors)
+	}
+
 	result, err := h.authService.Register(input)
 	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, err.Error())
@@ -57,6 +61,10 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
+	if errors := utils.ValidateStruct(input); len(errors) > 0 {
+		return utils.ValidationErrorResponse(c, errors)
+	}
+
 	result, err := h.authService.Login(input)
 	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
@@ -77,11 +85,15 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	var input struct {
-		RefreshToken string `json:"refresh_token"`
+		RefreshToken string `json:"refresh_token" validate:"required"`
 	}
 
 	if err := c.BodyParser(&input); err != nil {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	if errors := utils.ValidateStruct(input); len(errors) > 0 {
+		return utils.ValidationErrorResponse(c, errors)
 	}
 
 	result, err := h.authService.RefreshToken(input.RefreshToken)

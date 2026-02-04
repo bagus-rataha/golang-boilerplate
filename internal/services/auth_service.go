@@ -27,8 +27,8 @@ func NewAuthService(userRepo *repository.UserRepository, cfg *config.Config) *Au
 // RegisterInput represents registration request
 type RegisterInput struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required,min=6"`
-	Name     string `json:"name" validate:"required"`
+	Password string `json:"password" validate:"required,min=6,max=100"`
+	Name     string `json:"name" validate:"required,min=2,max=100"`
 }
 
 // LoginInput represents login request

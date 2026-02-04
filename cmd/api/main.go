@@ -10,6 +10,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/swagger"
 
@@ -17,8 +18,8 @@ import (
 )
 
 // @title Fiber API Boilerplate
-// @version 1.0
-// @description Simple REST API with Fiber, GORM, JWT
+// @version 2.0
+// @description Production-ready REST API with Fiber, GORM, JWT, Validation
 // @host localhost:8000
 // @BasePath /api/v1
 // @securityDefinitions.apikey BearerAuth
@@ -27,6 +28,9 @@ import (
 func main() {
 	// Load configuration
 	cfg := config.LoadConfig()
+
+	// Log environment
+	log.Printf("Environment: %s", cfg.AppEnv)
 
 	// Connect to database
 	db := config.ConnectDB(cfg)
@@ -45,15 +49,42 @@ func main() {
 	// Initialize Fiber app
 	app := fiber.New(fiber.Config{
 		ErrorHandler: middleware.ErrorHandler,
+		Prefork:      cfg.IsProduction(),
+		ServerHeader: "",
 	})
 
 	// Global middleware
-	app.Use(recover.New())
-	app.Use(cors.New())
+	app.Use(recover.New(recover.Config{
+		EnableStackTrace: cfg.IsDevelopment(),
+	}))
+
+	// CORS configuration
+	if cfg.IsProduction() && len(cfg.AllowedOrigins) > 0 {
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     joinOrigins(cfg.AllowedOrigins),
+			AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+			AllowHeaders:     "Origin,Content-Type,Accept,Authorization",
+			AllowCredentials: true,
+		}))
+	} else {
+		app.Use(cors.New())
+	}
+
+	// Rate limiting (production only)
+	if cfg.IsProduction() {
+		app.Use(limiter.New(limiter.Config{
+			Max:        cfg.RateLimitMax,
+			Expiration: cfg.RateLimitWindow,
+		}))
+	}
+
 	app.Use(middleware.Logger())
 
-	// Swagger documentation
-	app.Get("/swagger/*", swagger.HandlerDefault)
+	// Swagger documentation (development only)
+	if cfg.IsDevelopment() {
+		app.Get("/swagger/*", swagger.HandlerDefault)
+		log.Printf("Swagger UI: http://localhost:%s/swagger/", cfg.Port)
+	}
 
 	// API routes
 	api := app.Group("/api/v1")
@@ -74,4 +105,16 @@ func main() {
 	// Start server
 	log.Printf("Server running on port %s", cfg.Port)
 	log.Fatal(app.Listen(":" + cfg.Port))
+}
+
+// joinOrigins joins allowed origins into a comma-separated string
+func joinOrigins(origins []string) string {
+	result := ""
+	for i, origin := range origins {
+		if i > 0 {
+			result += ","
+		}
+		result += origin
+	}
+	return result
 }

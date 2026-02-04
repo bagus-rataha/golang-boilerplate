@@ -1,10 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Simple REST API with Fiber, GORM, JWT",
+        "description": "Production-ready REST API with Fiber, GORM, JWT, Validation",
         "title": "Fiber API Boilerplate",
         "contact": {},
-        "version": "1.0"
+        "version": "2.0"
     },
     "host": "localhost:8000",
     "basePath": "/api/v1",
@@ -367,10 +367,13 @@
                     "type": "string"
                 },
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 },
                 "password": {
                     "type": "string",
+                    "maxLength": 100,
                     "minLength": 6
                 }
             }
@@ -396,7 +399,9 @@
             ],
             "properties": {
                 "name": {
-                    "type": "string"
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         },
