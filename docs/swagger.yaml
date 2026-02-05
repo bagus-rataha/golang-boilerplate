@@ -69,9 +69,9 @@ definitions:
 host: localhost:8000
 info:
   contact: {}
-  description: Production-ready REST API with Fiber, GORM, JWT, Validation
+  description: Production-ready REST API with clean architecture
   title: Fiber API Boilerplate
-  version: "2.0"
+  version: "3.0"
 paths:
   /auth/login:
     post:

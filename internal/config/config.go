@@ -4,7 +4,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -22,7 +21,7 @@ type Config struct {
 	JWTRefreshExpire time.Duration
 	Port             string
 	AppEnv           string
-	AllowedOrigins   []string
+	AllowedOrigins   string
 	RateLimitMax     int
 	RateLimitWindow  time.Duration
 }
@@ -56,16 +55,6 @@ func LoadConfig() *Config {
 		log.Fatal("Invalid RATE_LIMIT_WINDOW format")
 	}
 
-	// Parse allowed origins
-	originsStr := getEnv("ALLOWED_ORIGINS", "")
-	var allowedOrigins []string
-	if originsStr != "" {
-		allowedOrigins = strings.Split(originsStr, ",")
-		for i := range allowedOrigins {
-			allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
-		}
-	}
-
 	return &Config{
 		DBHost:           getEnv("DB_HOST", "localhost"),
 		DBPort:           getEnv("DB_PORT", "5432"),
@@ -77,7 +66,7 @@ func LoadConfig() *Config {
 		JWTRefreshExpire: refreshExpire,
 		Port:             getEnv("PORT", "8000"),
 		AppEnv:           getEnv("APP_ENV", "development"),
-		AllowedOrigins:   allowedOrigins,
+		AllowedOrigins:   getEnv("ALLOWED_ORIGINS", ""),
 		RateLimitMax:     rateLimitMax,
 		RateLimitWindow:  rateLimitWindow,
 	}

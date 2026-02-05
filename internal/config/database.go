@@ -4,6 +4,7 @@ import (
 	"fiber-api-boilerplate/internal/models"
 	"fmt"
 	"log"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -32,15 +33,28 @@ func ConnectDB(cfg *Config) *gorm.DB {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	// Auto migrate models (development only)
-	if cfg.IsDevelopment() {
-		if err := db.AutoMigrate(&models.User{}); err != nil {
-			log.Fatal("Failed to migrate database:", err)
-		}
-		log.Println("Database connected and migrated successfully")
-	} else {
-		log.Println("Database connected (production mode - use golang-migrate for migrations)")
+	// Get underlying SQL database
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal("Failed to get database instance:", err)
 	}
 
+	// Configure connection pool
+	sqlDB.SetMaxIdleConns(10)                  // Idle connections
+	sqlDB.SetMaxOpenConns(100)                 // Max open connections
+	sqlDB.SetConnMaxLifetime(time.Hour)        // Connection lifetime
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Idle timeout
+
+	// Migration strategy
+	if cfg.IsDevelopment() {
+		if err := db.AutoMigrate(&models.User{}); err != nil {
+			log.Fatal("Failed to auto-migrate:", err)
+		}
+		log.Println("Auto-migration completed (development mode)")
+	} else {
+		log.Println("Production mode: Run migrations manually via golang-migrate")
+	}
+
+	log.Println("Database connected successfully")
 	return db
 }

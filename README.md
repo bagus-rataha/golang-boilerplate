@@ -1,24 +1,136 @@
-# Fiber API Boilerplate v2
+# Fiber API Boilerplate v3
 
-Production-ready REST API boilerplate with Go Fiber, GORM, JWT, and PostgreSQL.
+Ultra-clean REST API with container pattern and optimized architecture.
+
+## What's New in v3
+
+- **Ultra-clean main.go** - 30 lines, pure orchestration
+- **Container pattern** - DI in `internal/container/`
+- **App module** - Fiber setup in `internal/app/`
+- **Routes module** - Organized in `internal/routes/`
+- **Connection pooling** - Optimized DB performance
+
+## Project Structure
+
+```
+fiber-api-boilerplate/
+├── cmd/api/main.go           # Ultra-clean entry point
+├── internal/
+│   ├── app/app.go           # Fiber setup
+│   ├── container/           # Dependency injection
+│   ├── routes/              # Route definitions
+│   ├── config/              # Configuration
+│   ├── middleware/          # Middleware
+│   ├── models/              # Database models
+│   ├── repository/          # Data access
+│   ├── services/            # Business logic
+│   ├── handlers/            # HTTP handlers
+│   └── utils/               # Helpers
+└── migrations/              # SQL migrations
+```
+
+## Quick Start
+
+```bash
+go mod download
+cp .env.example .env
+createdb fiber_api
+swag init -g cmd/api/main.go -o docs
+air
+```
+
+## API Endpoints
+
+### Public
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+
+### Protected (JWT)
+- `GET /api/v1/users/me`
+- `PUT /api/v1/users/me`
+- `GET /api/v1/users`
+
+### Health
+- `GET /health`
+
+## Adding New Module
+
+### 1. Add to Container
+```go
+// internal/container/container.go
+type Container struct {
+    AuthHandler    *handlers.AuthHandler
+    UserHandler    *handlers.UserHandler
+    ProductHandler *handlers.ProductHandler  // NEW
+}
+```
+
+### 2. Initialize in Container
+```go
+productRepo := repository.NewProductRepository(db)
+productService := services.NewProductService(productRepo)
+productHandler := handlers.NewProductHandler(productService)
+```
+
+### 3. Add Routes
+```go
+// internal/routes/api.go
+func setupProductRoutes(api fiber.Router, c *container.Container, cfg *config.Config) {
+    products := api.Group("/products")
+    products.Use(middleware.JWTProtected(cfg.JWTSecret))
+    products.Get("/", c.ProductHandler.List)
+    products.Post("/", c.ProductHandler.Create)
+}
+```
+
+### 4. Register Routes
+```go
+// internal/routes/api.go - SetupAPIRoutes
+setupProductRoutes(api, c, cfg)
+```
+
+## Environment Variables
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=fiber_api
+
+JWT_SECRET=your-secret-key
+JWT_ACCESS_EXPIRE=24h
+JWT_REFRESH_EXPIRE=168h
+
+PORT=8000
+APP_ENV=development
+
+ALLOWED_ORIGINS=https://yourdomain.com
+RATE_LIMIT_MAX=100
+RATE_LIMIT_WINDOW=1m
+```
+
+## Connection Pool Settings
+
+Default values (hardcoded):
+- MaxIdleConns: 10
+- MaxOpenConns: 100
+- ConnMaxLifetime: 1 hour
+- ConnMaxIdleTime: 10 minutes
 
 ## Features
 
-### Core
-- **Go Fiber v2** - Fast HTTP framework
-- **GORM v2** - ORM with PostgreSQL
-- **JWT Authentication** - Access & Refresh tokens
-- **Swagger Documentation** - Auto-generated API docs
-- **Clean Architecture** - Organized code structure
-- **Hot Reload** - Air for development
-
-### v2 Features
-- **Request Validation** - go-playground/validator with user-friendly messages
-- **Environment Config** - Development vs Production modes
-- **Rate Limiting** - Production-only rate limiting
-- **CORS Protection** - Environment-specific CORS
-- **Conditional Swagger** - Development-only API docs
-- **Migration Strategy** - golang-migrate for production
+- Go Fiber v2
+- GORM + PostgreSQL with connection pooling
+- JWT Authentication
+- Request Validation
+- Swagger (dev only)
+- Environment-based config
+- Rate Limiting (prod only)
+- CORS Protection
+- Clean Architecture
+- Hot Reload (Air)
 
 ## Development vs Production
 
@@ -31,138 +143,16 @@ Production-ready REST API boilerplate with Go Fiber, GORM, JWT, and PostgreSQL.
 | SQL Logging | Enabled | Disabled |
 | Stack Trace | Enabled | Disabled |
 | Prefork | Disabled | Enabled |
+| Compression | Disabled | Enabled |
 
-## Quick Start
-
-### Prerequisites
-- Go 1.21+
-- PostgreSQL 14+
-- Air (optional, for hot reload)
-
-### Installation
-
-1. Clone repository
-```bash
-git clone <repository-url>
-cd fiber-api-boilerplate
-```
-
-2. Install dependencies
-```bash
-go mod download
-```
-
-3. Setup environment
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-4. Create database
-```bash
-createdb fiber_api
-```
-
-5. Install tools (optional)
-```bash
-# Hot reload
-go install github.com/cosmtrek/air@latest
-
-# Swagger generation
-go install github.com/swaggo/swag/cmd/swag@latest
-```
-
-### Running
-
-#### Development
-```bash
-# With hot reload
-air
-
-# Without hot reload
-go run cmd/api/main.go
-```
-
-#### Production
-```bash
-# Build
-go build -o api cmd/api/main.go
-
-# Run with production environment
-APP_ENV=production ./api
-```
-
-## Generate Swagger Docs
+## Testing
 
 ```bash
-swag init -g cmd/api/main.go -o docs
+go test ./...
+go test -cover ./...
 ```
 
-Access Swagger UI at: `http://localhost:8000/swagger/` (development only)
-
-## API Endpoints
-
-### Auth (Public)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/v1/auth/register | Register new user |
-| POST | /api/v1/auth/login | Login user |
-| POST | /api/v1/auth/refresh | Refresh access token |
-
-### Users (Protected)
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/v1/users/me | Get current user profile |
-| PUT | /api/v1/users/me | Update current user profile |
-| GET | /api/v1/users | List all users |
-
-## Environment Variables
-
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=fiber_api
-
-# JWT
-JWT_SECRET=your-super-secret-key
-JWT_ACCESS_EXPIRE=24h
-JWT_REFRESH_EXPIRE=168h
-
-# Server
-PORT=8000
-APP_ENV=development  # or production
-
-# CORS (Production)
-ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
-
-# Rate Limit (Production)
-RATE_LIMIT_MAX=100
-RATE_LIMIT_WINDOW=1m
-```
-
-## Project Structure
-
-```
-fiber-api-boilerplate/
-├── cmd/api/              # Application entry point
-├── internal/
-│   ├── config/          # Configuration management
-│   ├── models/          # Database models
-│   ├── repository/      # Database operations
-│   ├── services/        # Business logic
-│   ├── handlers/        # HTTP handlers
-│   ├── middleware/      # Custom middleware
-│   └── utils/           # Helper functions
-├── migrations/          # Database migrations
-├── docs/                # Swagger documentation
-├── .env.example         # Environment template
-└── README.md
-```
-
-## Docker Deployment
+## Docker
 
 ### Dockerfile
 ```dockerfile
@@ -226,33 +216,13 @@ volumes:
 
 ## Production Checklist
 
-- [ ] Set `APP_ENV=production`
-- [ ] Use strong `JWT_SECRET`
-- [ ] Configure `ALLOWED_ORIGINS`
-- [ ] Set appropriate rate limits
-- [ ] Run database migrations with golang-migrate
-- [ ] Enable HTTPS (via reverse proxy)
-- [ ] Setup logging/monitoring
-- [ ] Configure database connection pooling
-
-## Troubleshooting
-
-### Swagger not loading
-- Ensure you're in development mode (`APP_ENV=development`)
-- Regenerate docs: `swag init -g cmd/api/main.go -o docs`
-
-### Database connection failed
-- Check PostgreSQL is running
-- Verify credentials in `.env`
-- Ensure database exists: `createdb fiber_api`
-
-### Rate limit errors
-- Rate limiting only active in production
-- Adjust `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW`
-
-### CORS errors
-- In development, all origins allowed
-- In production, configure `ALLOWED_ORIGINS`
+- [ ] APP_ENV=production
+- [ ] Strong JWT_SECRET (32+ chars)
+- [ ] Configure ALLOWED_ORIGINS
+- [ ] Run migrations manually
+- [ ] Setup SSL/TLS
+- [ ] Configure reverse proxy
+- [ ] Enable monitoring
 
 ## License
 

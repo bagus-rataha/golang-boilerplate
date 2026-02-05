@@ -1,10 +1,10 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "Production-ready REST API with Fiber, GORM, JWT, Validation",
+        "description": "Production-ready REST API with clean architecture",
         "title": "Fiber API Boilerplate",
         "contact": {},
-        "version": "2.0"
+        "version": "3.0"
     },
     "host": "localhost:8000",
     "basePath": "/api/v1",
