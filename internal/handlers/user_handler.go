@@ -1,34 +1,28 @@
 package handlers
 
 import (
+	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
 )
 
-// UserHandler handles user endpoints
 type UserHandler struct {
 	userService *services.UserService
 }
 
-// NewUserHandler creates new user handler
 func NewUserHandler(userService *services.UserService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 
 // GetProfile godoc
-// @Summary Get user profile
-// @Description Get current user profile
+// @Summary Get profile
 // @Tags users
-// @Accept json
-// @Produce json
 // @Security BearerAuth
-// @Success 200 {object} utils.Response{data=models.UserResponse}
-// @Failure 401 {object} utils.Response
+// @Success 200 {object} utils.Response{data=dto.UserResponse}
 // @Router /users/me [get]
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
-	// Get user ID from JWT claims (set by auth middleware)
 	userID := c.Locals("userID").(uint)
 
 	user, err := h.userService.GetProfile(userID)
@@ -40,25 +34,22 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 }
 
 // UpdateProfile godoc
-// @Summary Update user profile
-// @Description Update current user profile
+// @Summary Update profile
 // @Tags users
-// @Accept json
-// @Produce json
 // @Security BearerAuth
-// @Param request body services.UpdateProfileInput true "Update profile request"
-// @Success 200 {object} utils.Response{data=models.UserResponse}
-// @Failure 400 {object} utils.Response
+// @Param request body dto.UpdateProfileInput true "Update profile"
+// @Success 200 {object} utils.Response{data=dto.UserResponse}
 // @Router /users/me [put]
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
 
-	var input services.UpdateProfileInput
+	var input dto.UpdateProfileInput
+
 	if err := c.BodyParser(&input); err != nil {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
 	}
 
-	if errors := utils.ValidateStruct(input); len(errors) > 0 {
+	if errors := utils.ValidateStruct(&input); len(errors) > 0 {
 		return utils.ValidationErrorResponse(c, errors)
 	}
 
@@ -71,14 +62,10 @@ func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 }
 
 // ListUsers godoc
-// @Summary List all users
-// @Description Get list of all users (admin only in production)
+// @Summary List users
 // @Tags users
-// @Accept json
-// @Produce json
 // @Security BearerAuth
-// @Success 200 {object} utils.Response{data=[]models.UserResponse}
-// @Failure 401 {object} utils.Response
+// @Success 200 {object} utils.Response{data=[]dto.UserResponse}
 // @Router /users [get]
 func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 	users, err := h.userService.ListUsers()

@@ -17,13 +17,6 @@ const docTemplate = `{
     "paths": {
         "/auth/login": {
             "post": {
-                "description": "Authenticate user and get tokens",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "auth"
                 ],
@@ -35,7 +28,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/services.LoginInput"
+                            "$ref": "#/definitions/dto.LoginInput"
                         }
                     }
                 ],
@@ -51,17 +44,11 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/services.TokenResponse"
+                                            "$ref": "#/definitions/dto.TokenResponse"
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -69,17 +56,10 @@ const docTemplate = `{
         },
         "/auth/refresh": {
             "post": {
-                "description": "Get new access token using refresh token",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "auth"
                 ],
-                "summary": "Refresh access token",
+                "summary": "Refresh token",
                 "parameters": [
                     {
                         "description": "Refresh token",
@@ -87,10 +67,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/dto.RefreshTokenInput"
                         }
                     }
                 ],
@@ -106,17 +83,11 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/services.TokenResponse"
+                                            "$ref": "#/definitions/dto.TokenResponse"
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -124,7 +95,6 @@ const docTemplate = `{
         },
         "/auth/register": {
             "post": {
-                "description": "Create new user account",
                 "consumes": [
                     "application/json"
                 ],
@@ -142,7 +112,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/services.RegisterInput"
+                            "$ref": "#/definitions/dto.RegisterInput"
                         }
                     }
                 ],
@@ -158,17 +128,11 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/services.TokenResponse"
+                                            "$ref": "#/definitions/dto.TokenResponse"
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -181,17 +145,10 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get list of all users (admin only in production)",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "users"
                 ],
-                "summary": "List all users",
+                "summary": "List users",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -206,18 +163,12 @@ const docTemplate = `{
                                         "data": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/definitions/models.UserResponse"
+                                                "$ref": "#/definitions/dto.UserResponse"
                                             }
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -230,17 +181,10 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get current user profile",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Get user profile",
+                "summary": "Get profile",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -253,17 +197,11 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -274,25 +212,18 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update current user profile",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
                 "tags": [
                     "users"
                 ],
-                "summary": "Update user profile",
+                "summary": "Update profile",
                 "parameters": [
                     {
-                        "description": "Update profile request",
+                        "description": "Update profile",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/services.UpdateProfileInput"
+                            "$ref": "#/definitions/dto.UpdateProfileInput"
                         }
                     }
                 ],
@@ -308,17 +239,11 @@ const docTemplate = `{
                                     "type": "object",
                                     "properties": {
                                         "data": {
-                                            "$ref": "#/definitions/models.UserResponse"
+                                            "$ref": "#/definitions/dto.UserResponse"
                                         }
                                     }
                                 }
                             ]
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/utils.Response"
                         }
                     }
                 }
@@ -326,27 +251,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.UserResponse": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "email": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                }
-            }
-        },
-        "services.LoginInput": {
+        "dto.LoginInput": {
             "type": "object",
             "required": [
                 "email",
@@ -361,7 +266,18 @@ const docTemplate = `{
                 }
             }
         },
-        "services.RegisterInput": {
+        "dto.RefreshTokenInput": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.RegisterInput": {
             "type": "object",
             "required": [
                 "email",
@@ -384,7 +300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "services.TokenResponse": {
+        "dto.TokenResponse": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -394,11 +310,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user": {
-                    "$ref": "#/definitions/models.UserResponse"
+                    "$ref": "#/definitions/dto.UserResponse"
                 }
             }
         },
-        "services.UpdateProfileInput": {
+        "dto.UpdateProfileInput": {
             "type": "object",
             "required": [
                 "name"
@@ -408,6 +324,26 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 100,
                     "minLength": 2
+                }
+            }
+        },
+        "dto.UserResponse": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
                 }
             }
         },

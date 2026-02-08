@@ -1,19 +1,6 @@
 basePath: /api/v1
 definitions:
-  models.UserResponse:
-    properties:
-      created_at:
-        type: string
-      email:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      role:
-        type: string
-    type: object
-  services.LoginInput:
+  dto.LoginInput:
     properties:
       email:
         type: string
@@ -23,7 +10,14 @@ definitions:
     - email
     - password
     type: object
-  services.RegisterInput:
+  dto.RefreshTokenInput:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  dto.RegisterInput:
     properties:
       email:
         type: string
@@ -40,16 +34,16 @@ definitions:
     - name
     - password
     type: object
-  services.TokenResponse:
+  dto.TokenResponse:
     properties:
       access_token:
         type: string
       refresh_token:
         type: string
       user:
-        $ref: '#/definitions/models.UserResponse'
+        $ref: '#/definitions/dto.UserResponse'
     type: object
-  services.UpdateProfileInput:
+  dto.UpdateProfileInput:
     properties:
       name:
         maxLength: 100
@@ -57,6 +51,19 @@ definitions:
         type: string
     required:
     - name
+    type: object
+  dto.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
     type: object
   utils.Response:
     properties:
@@ -75,18 +82,13 @@ info:
 paths:
   /auth/login:
     post:
-      consumes:
-      - application/json
-      description: Authenticate user and get tokens
       parameters:
       - description: Login request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.LoginInput'
-      produces:
-      - application/json
+          $ref: '#/definitions/dto.LoginInput'
       responses:
         "200":
           description: OK
@@ -95,31 +97,20 @@ paths:
             - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/services.TokenResponse'
+                  $ref: '#/definitions/dto.TokenResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.Response'
       summary: Login user
       tags:
       - auth
   /auth/refresh:
     post:
-      consumes:
-      - application/json
-      description: Get new access token using refresh token
       parameters:
       - description: Refresh token
         in: body
         name: request
         required: true
         schema:
-          additionalProperties:
-            type: string
-          type: object
-      produces:
-      - application/json
+          $ref: '#/definitions/dto.RefreshTokenInput'
       responses:
         "200":
           description: OK
@@ -128,27 +119,22 @@ paths:
             - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/services.TokenResponse'
+                  $ref: '#/definitions/dto.TokenResponse'
               type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.Response'
-      summary: Refresh access token
+      summary: Refresh token
       tags:
       - auth
   /auth/register:
     post:
       consumes:
       - application/json
-      description: Create new user account
       parameters:
       - description: Register request
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.RegisterInput'
+          $ref: '#/definitions/dto.RegisterInput'
       produces:
       - application/json
       responses:
@@ -159,22 +145,13 @@ paths:
             - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/services.TokenResponse'
+                  $ref: '#/definitions/dto.TokenResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.Response'
       summary: Register new user
       tags:
       - auth
   /users:
     get:
-      consumes:
-      - application/json
-      description: Get list of all users (admin only in production)
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -184,25 +161,16 @@ paths:
             - properties:
                 data:
                   items:
-                    $ref: '#/definitions/models.UserResponse'
+                    $ref: '#/definitions/dto.UserResponse'
                   type: array
               type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.Response'
       security:
       - BearerAuth: []
-      summary: List all users
+      summary: List users
       tags:
       - users
   /users/me:
     get:
-      consumes:
-      - application/json
-      description: Get current user profile
-      produces:
-      - application/json
       responses:
         "200":
           description: OK
@@ -211,30 +179,21 @@ paths:
             - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/models.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/utils.Response'
       security:
       - BearerAuth: []
-      summary: Get user profile
+      summary: Get profile
       tags:
       - users
     put:
-      consumes:
-      - application/json
-      description: Update current user profile
       parameters:
-      - description: Update profile request
+      - description: Update profile
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/services.UpdateProfileInput'
-      produces:
-      - application/json
+          $ref: '#/definitions/dto.UpdateProfileInput'
       responses:
         "200":
           description: OK
@@ -243,15 +202,11 @@ paths:
             - $ref: '#/definitions/utils.Response'
             - properties:
                 data:
-                  $ref: '#/definitions/models.UserResponse'
+                  $ref: '#/definitions/dto.UserResponse'
               type: object
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/utils.Response'
       security:
       - BearerAuth: []
-      summary: Update user profile
+      summary: Update profile
       tags:
       - users
 securityDefinitions:
