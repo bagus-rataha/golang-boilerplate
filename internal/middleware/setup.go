@@ -34,13 +34,22 @@ func SetupMiddleware(app *fiber.App, cfg *config.Config) {
 }
 
 // ErrorHandler handles all errors globally
+// Skips if response already written (status != 200)
 func ErrorHandler(c *fiber.Ctx, err error) error {
+	// If response already written, skip to prevent overwrite
+	if c.Response().StatusCode() != fiber.StatusOK {
+		return nil
+	}
+
+	// Default error code
 	code := fiber.StatusInternalServerError
 
+	// Check if it's a Fiber error with custom code
 	if e, ok := err.(*fiber.Error); ok {
 		code = e.Code
 	}
 
+	// Write error response (fallback for unhandled errors)
 	return c.Status(code).JSON(fiber.Map{
 		"success": false,
 		"message": err.Error(),
