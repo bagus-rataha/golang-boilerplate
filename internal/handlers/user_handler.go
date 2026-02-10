@@ -42,15 +42,10 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 // @Router /users/me [put]
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
 	userID := c.Locals("userID").(uint)
-
 	var input dto.UpdateProfileInput
 
-	if err := c.BodyParser(&input); err != nil {
-		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	if errors := utils.ValidateStruct(&input); len(errors) > 0 {
-		return utils.ValidationErrorResponse(c, errors)
+	if err := utils.ParseAndValidate(c, &input); err != nil {
+		return err
 	}
 
 	user, err := h.userService.UpdateProfile(userID, input)

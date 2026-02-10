@@ -27,12 +27,8 @@ func NewAuthHandler(authService *services.AuthService) *AuthHandler {
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
 	var input dto.RegisterInput
 
-	if err := c.BodyParser(&input); err != nil {
-		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	if errors := utils.ValidateStruct(&input); len(errors) > 0 {
-		return utils.ValidationErrorResponse(c, errors)
+	if err := utils.ParseAndValidate(c, &input); err != nil {
+		return err
 	}
 
 	result, err := h.authService.Register(input)
@@ -52,12 +48,8 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 func (h *AuthHandler) Login(c *fiber.Ctx) error {
 	var input dto.LoginInput
 
-	if err := c.BodyParser(&input); err != nil {
-		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	if errors := utils.ValidateStruct(&input); len(errors) > 0 {
-		return utils.ValidationErrorResponse(c, errors)
+	if err := utils.ParseAndValidate(c, &input); err != nil {
+		return err
 	}
 
 	result, err := h.authService.Login(input)
@@ -77,12 +69,8 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	var input dto.RefreshTokenInput
 
-	if err := c.BodyParser(&input); err != nil {
-		return utils.ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
-	}
-
-	if errors := utils.ValidateStruct(&input); len(errors) > 0 {
-		return utils.ValidationErrorResponse(c, errors)
+	if err := utils.ParseAndValidate(c, &input); err != nil {
+		return err
 	}
 
 	result, err := h.authService.RefreshToken(input.RefreshToken)

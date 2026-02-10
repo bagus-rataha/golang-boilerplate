@@ -7,36 +7,47 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/compress"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 )
 
-// SetupMiddleware configures all global middleware
 func SetupMiddleware(app *fiber.App, cfg *config.Config) {
-	// Panic recovery
 	app.Use(recover.New(recover.Config{
 		EnableStackTrace: cfg.IsDevelopment(),
 	}))
 
-	// CORS
 	setupCORS(app, cfg)
 
-	// Rate limiting (production only)
 	if cfg.IsProduction() {
 		setupRateLimiter(app, cfg)
-	}
-
-	// Compression (production only)
-	if cfg.IsProduction() {
 		app.Use(compress.New(compress.Config{
 			Level: compress.LevelBestSpeed,
 		}))
 	}
 
-	// Request logger
-	app.Use(Logger())
+	// Fiber's built-in logger
+	app.Use(logger.New(logger.Config{
+		Format:     "[${time}] ${status} - ${method} ${path} ${latency}\n",
+		TimeFormat: "15:04:05",
+		TimeZone:   "Local",
+	}))
 }
 
-// setupCORS configures CORS middleware
+// ErrorHandler handles all errors globally
+func ErrorHandler(c *fiber.Ctx, err error) error {
+	code := fiber.StatusInternalServerError
+
+	if e, ok := err.(*fiber.Error); ok {
+		code = e.Code
+	}
+
+	return c.Status(code).JSON(fiber.Map{
+		"success": false,
+		"message": err.Error(),
+		"data":    nil,
+	})
+}
+
 func setupCORS(app *fiber.App, cfg *config.Config) {
 	if cfg.IsProduction() {
 		app.Use(cors.New(cors.Config{
@@ -53,7 +64,6 @@ func setupCORS(app *fiber.App, cfg *config.Config) {
 	}
 }
 
-// setupRateLimiter configures rate limiting
 func setupRateLimiter(app *fiber.App, cfg *config.Config) {
 	app.Use(limiter.New(limiter.Config{
 		Max:        cfg.RateLimitMax,

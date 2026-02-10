@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -10,48 +11,74 @@ import (
 
 var validate = validator.New()
 
-// ValidationError represents a single validation error
-type ValidationError struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
+func ValidateStruct(s interface{}) error {
+	return validate.Struct(s)
 }
 
-// ValidateStruct validates a struct and returns validation errors
-func ValidateStruct(s interface{}) []ValidationError {
-	var errors []ValidationError
-
-	err := validate.Struct(s)
-	if err != nil {
-		for _, err := range err.(validator.ValidationErrors) {
-			var message string
-
-			field := strings.ToLower(err.Field())
-
-			switch err.Tag() {
-			case "required":
-				message = fmt.Sprintf("%s is required", field)
-			case "email":
-				message = fmt.Sprintf("%s must be a valid email address", field)
-			case "min":
-				message = fmt.Sprintf("%s must be at least %s characters", field, err.Param())
-			case "max":
-				message = fmt.Sprintf("%s must be at most %s characters", field, err.Param())
-			default:
-				message = fmt.Sprintf("%s is invalid", field)
-			}
-
-			errors = append(errors, ValidationError{
-				Field:   field,
-				Message: message,
+// ParseAndValidate combines body parsing and validation with detailed errors
+func ParseAndValidate(c *fiber.Ctx, input interface{}) error {
+	// Parse JSON body
+	if err := c.BodyParser(input); err != nil {
+		// JSON syntax error
+		if jsonErr, ok := err.(*json.SyntaxError); ok {
+			return c.Status(fiber.StatusBadRequest).JSON(Response{
+				Success: false,
+				Message: fmt.Sprintf("JSON syntax error at position %d", jsonErr.Offset),
+				Data:    nil,
 			})
+		}
+
+		// Type mismatch error
+		if jsonErr, ok := err.(*json.UnmarshalTypeError); ok {
+			return c.Status(fiber.StatusBadRequest).JSON(Response{
+				Success: false,
+				Message: fmt.Sprintf("Invalid type for field '%s': expected %s, got %s",
+					jsonErr.Field, jsonErr.Type, jsonErr.Value),
+				Data: nil,
+			})
+		}
+
+		return ErrorResponse(c, fiber.StatusBadRequest, "Invalid request body")
+	}
+
+	// Validate struct
+	if err := validate.Struct(input); err != nil {
+		return ValidationErrorResponse(c, err)
+	}
+
+	return nil
+}
+
+func ValidationErrorResponse(c *fiber.Ctx, err error) error {
+	errors := make(map[string]string)
+
+	if validationErrors, ok := err.(validator.ValidationErrors); ok {
+		for _, fieldError := range validationErrors {
+			field := strings.ToLower(fieldError.Field())
+
+			switch fieldError.Tag() {
+			case "required":
+				errors[field] = fmt.Sprintf("%s is required", field)
+			case "email":
+				errors[field] = "Invalid email format"
+			case "min":
+				errors[field] = fmt.Sprintf("%s must be at least %s characters", field, fieldError.Param())
+			case "max":
+				errors[field] = fmt.Sprintf("%s must not exceed %s characters", field, fieldError.Param())
+			case "oneof":
+				errors[field] = fmt.Sprintf("%s must be one of: %s", field, fieldError.Param())
+			case "gtfield":
+				errors[field] = fmt.Sprintf("%s must be greater than %s", field, fieldError.Param())
+			case "gt":
+				errors[field] = fmt.Sprintf("%s must be greater than %s", field, fieldError.Param())
+			case "gte":
+				errors[field] = fmt.Sprintf("%s must be greater than or equal to %s", field, fieldError.Param())
+			default:
+				errors[field] = fmt.Sprintf("Validation failed on '%s'", fieldError.Tag())
+			}
 		}
 	}
 
-	return errors
-}
-
-// ValidationErrorResponse returns a validation error response
-func ValidationErrorResponse(c *fiber.Ctx, errors []ValidationError) error {
 	return c.Status(fiber.StatusBadRequest).JSON(Response{
 		Success: false,
 		Message: "Validation failed",
