@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
@@ -10,10 +11,22 @@ import (
 
 type AuthHandler struct {
 	authService *services.AuthService
+	config      *config.Config
 }
 
-func NewAuthHandler(authService *services.AuthService) *AuthHandler {
-	return &AuthHandler{authService: authService}
+func NewAuthHandler(authService *services.AuthService, cfg *config.Config) *AuthHandler {
+	return &AuthHandler{authService: authService, config: cfg}
+}
+
+// extractRefreshToken reads the refresh token from the cookie first and
+// falls back to the request body so non-browser clients still work.
+func (h *AuthHandler) extractRefreshToken(c *fiber.Ctx) string {
+	if token := c.Cookies(utils.RefreshTokenCookieName); token != "" {
+		return token
+	}
+	var input dto.RefreshTokenInput
+	_ = c.BodyParser(&input)
+	return input.RefreshToken
 }
 
 // Register godoc
@@ -36,6 +49,7 @@ func (h *AuthHandler) Register(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, fiber.StatusBadRequest, err.Error())
 	}
 
+	utils.SetRefreshTokenCookie(c, result.RefreshToken, h.config.JWTRefreshExpire, h.config.IsProduction())
 	return utils.SuccessResponse(c, fiber.StatusCreated, "User registered successfully", result)
 }
 
@@ -57,26 +71,62 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
 	}
 
+	utils.SetRefreshTokenCookie(c, result.RefreshToken, h.config.JWTRefreshExpire, h.config.IsProduction())
 	return utils.SuccessResponse(c, fiber.StatusOK, "Login successful", result)
 }
 
 // RefreshToken godoc
 // @Summary Refresh token
 // @Tags auth
-// @Param request body dto.RefreshTokenInput true "Refresh token"
+// @Param request body dto.RefreshTokenInput false "Refresh token (optional if cookie present)"
 // @Success 200 {object} utils.Response{data=dto.TokenResponse}
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	var input dto.RefreshTokenInput
-
-	if err := utils.ParseAndValidate(c, &input); err != nil {
-		return err
+	refreshToken := h.extractRefreshToken(c)
+	if refreshToken == "" {
+		return utils.ErrorResponse(c, fiber.StatusBadRequest, "refresh token is required")
 	}
 
-	result, err := h.authService.RefreshToken(input.RefreshToken)
+	result, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
 	}
 
+	utils.SetRefreshTokenCookie(c, result.RefreshToken, h.config.JWTRefreshExpire, h.config.IsProduction())
 	return utils.SuccessResponse(c, fiber.StatusOK, "Token refreshed successfully", result)
+}
+
+// Logout godoc
+// @Summary Logout current session
+// @Tags auth
+// @Success 200 {object} utils.Response
+// @Router /auth/logout [post]
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	refreshToken := h.extractRefreshToken(c)
+	if refreshToken != "" {
+		_ = h.authService.Logout(refreshToken)
+	}
+
+	utils.ClearRefreshTokenCookie(c, h.config.IsProduction())
+	return utils.SuccessResponse(c, fiber.StatusOK, "Logged out successfully", nil)
+}
+
+// LogoutAll godoc
+// @Summary Logout from all devices
+// @Tags auth
+// @Security BearerAuth
+// @Success 200 {object} utils.Response
+// @Router /auth/logout-all [post]
+func (h *AuthHandler) LogoutAll(c *fiber.Ctx) error {
+	userID, ok := c.Locals("userID").(uint)
+	if !ok {
+		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid session")
+	}
+
+	if err := h.authService.LogoutAll(userID); err != nil {
+		return utils.ErrorResponse(c, fiber.StatusInternalServerError, err.Error())
+	}
+
+	utils.ClearRefreshTokenCookie(c, h.config.IsProduction())
+	return utils.SuccessResponse(c, fiber.StatusOK, "Logged out from all devices", nil)
 }

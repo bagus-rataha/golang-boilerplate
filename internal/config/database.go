@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fiber-api-boilerplate/internal/models"
 	"fmt"
 	"log"
 	"time"
@@ -45,16 +44,7 @@ func ConnectDB(cfg *Config) *gorm.DB {
 	sqlDB.SetConnMaxLifetime(time.Hour)        // Connection lifetime
 	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // Idle timeout
 
-	// Migration strategy
-	if cfg.IsDevelopment() {
-		if err := db.AutoMigrate(&models.User{}); err != nil {
-			log.Fatal("Failed to auto-migrate:", err)
-		}
-		log.Println("Auto-migration completed (development mode)")
-	} else {
-		log.Println("Production mode: Run migrations manually via golang-migrate")
-	}
-
 	log.Println("Database connected successfully")
+	log.Println("Schema is managed by golang-migrate. Run 'migrate -path migrations -database \"$DATABASE_URL\" up' to apply pending migrations.")
 	return db
 }

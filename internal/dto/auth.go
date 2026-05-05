@@ -13,9 +13,10 @@ type LoginInput struct {
 	Password string `json:"password" validate:"required"`
 }
 
-// RefreshTokenInput for token refresh
+// RefreshTokenInput for token refresh.
+// Optional in body — handler reads cookie first and falls back to this field.
 type RefreshTokenInput struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 // TokenResponse for auth responses
