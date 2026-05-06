@@ -2,4 +2,4 @@ Boilerplate*.md
 tmp/
 /tmp/*
 .claude/
-.claude/*
+*.env
