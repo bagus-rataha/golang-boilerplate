@@ -16,6 +16,8 @@ func SetupMiddleware(app *fiber.App, cfg *config.Config) {
 		EnableStackTrace: cfg.IsDevelopment(),
 	}))
 
+	app.Use(SecurityHeaders(cfg))
+
 	setupCORS(app, cfg)
 
 	if cfg.IsProduction() {
@@ -53,7 +55,6 @@ func ErrorHandler(c *fiber.Ctx, err error) error {
 	return c.Status(code).JSON(fiber.Map{
 		"success": false,
 		"message": err.Error(),
-		"data":    nil,
 	})
 }
 
@@ -84,7 +85,6 @@ func setupRateLimiter(app *fiber.App, cfg *config.Config) {
 			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 				"success": false,
 				"message": "Too many requests, please try again later",
-				"data":    nil,
 			})
 		},
 	}))
