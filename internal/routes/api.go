@@ -31,13 +31,13 @@ func setupAuthRoutes(api fiber.Router, c *container.Container, cfg *config.Confi
 	auth.Post("/login", c.AuthHandler.Login)
 	auth.Post("/refresh", c.AuthHandler.RefreshToken)
 	auth.Post("/logout", c.AuthHandler.Logout)
-	auth.Post("/logout-all", middleware.JWTProtected(cfg.JWTSecret), c.AuthHandler.LogoutAll)
+	auth.Post("/logout-all", middleware.JWTProtected(cfg.JWTAccessSecret), c.AuthHandler.LogoutAll)
 }
 
 // setupUserRoutes configures user routes (protected)
 func setupUserRoutes(api fiber.Router, c *container.Container, cfg *config.Config) {
 	users := api.Group("/users")
-	users.Use(middleware.JWTProtected(cfg.JWTSecret))
+	users.Use(middleware.JWTProtected(cfg.JWTAccessSecret))
 
 	users.Get("/me", c.UserHandler.GetProfile)
 	users.Put("/me", c.UserHandler.UpdateProfile)

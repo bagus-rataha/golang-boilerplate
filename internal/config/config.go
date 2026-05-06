@@ -16,7 +16,8 @@ type Config struct {
 	DBUser           string
 	DBPassword       string
 	DBName           string
-	JWTSecret        string
+	JWTAccessSecret  string
+	JWTRefreshSecret string
 	JWTAccessExpire  time.Duration
 	JWTRefreshExpire time.Duration
 	Port             string
@@ -61,7 +62,8 @@ func LoadConfig() *Config {
 		DBUser:           getEnv("DB_USER", "postgres"),
 		DBPassword:       getEnv("DB_PASSWORD", "postgres"),
 		DBName:           getEnv("DB_NAME", "fiber_api"),
-		JWTSecret:        getEnv("JWT_SECRET", "change-this-secret"),
+		JWTAccessSecret:  getEnv("JWT_ACCESS_SECRET", "change-this-access-secret"),
+		JWTRefreshSecret: getEnv("JWT_REFRESH_SECRET", "change-this-refresh-secret"),
 		JWTAccessExpire:  accessExpire,
 		JWTRefreshExpire: refreshExpire,
 		Port:             getEnv("PORT", "8000"),

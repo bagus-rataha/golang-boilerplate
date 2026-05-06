@@ -78,7 +78,7 @@ productHandler := handlers.NewProductHandler(productService)
 // internal/routes/api.go
 func setupProductRoutes(api fiber.Router, c *container.Container, cfg *config.Config) {
     products := api.Group("/products")
-    products.Use(middleware.JWTProtected(cfg.JWTSecret))
+    products.Use(middleware.JWTProtected(cfg.JWTAccessSecret))
     products.Get("/", c.ProductHandler.List)
     products.Post("/", c.ProductHandler.Create)
 }
@@ -99,7 +99,8 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 DB_NAME=fiber_api
 
-JWT_SECRET=your-secret-key
+JWT_ACCESS_SECRET=your-access-secret-key
+JWT_REFRESH_SECRET=your-refresh-secret-key
 JWT_ACCESS_EXPIRE=24h
 JWT_REFRESH_EXPIRE=168h
 
@@ -192,7 +193,8 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=fiber_api
-      - JWT_SECRET=your-production-secret
+      - JWT_ACCESS_SECRET=your-production-access-secret
+      - JWT_REFRESH_SECRET=your-production-refresh-secret
       - ALLOWED_ORIGINS=https://yourdomain.com
       - RATE_LIMIT_MAX=100
       - RATE_LIMIT_WINDOW=1m
@@ -217,7 +219,7 @@ volumes:
 ## Production Checklist
 
 - [ ] APP_ENV=production
-- [ ] Strong JWT_SECRET (32+ chars)
+- [ ] Strong JWT_ACCESS_SECRET & JWT_REFRESH_SECRET (32+ chars each, distinct values)
 - [ ] Configure ALLOWED_ORIGINS
 - [ ] Run migrations manually
 - [ ] Setup SSL/TLS

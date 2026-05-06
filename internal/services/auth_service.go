@@ -35,7 +35,7 @@ func NewAuthService(
 func (s *AuthService) generateAndStoreTokens(user *models.User) (*dto.TokenResponse, error) {
 	accessToken, err := utils.GenerateToken(
 		user.ID, user.Email, user.Role,
-		s.config.JWTSecret, s.config.JWTAccessExpire,
+		s.config.JWTAccessSecret, s.config.JWTAccessExpire,
 	)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (s *AuthService) generateAndStoreTokens(user *models.User) (*dto.TokenRespo
 
 	refreshToken, err := utils.GenerateToken(
 		user.ID, user.Email, user.Role,
-		s.config.JWTSecret, s.config.JWTRefreshExpire,
+		s.config.JWTRefreshSecret, s.config.JWTRefreshExpire,
 	)
 	if err != nil {
 		return nil, err
@@ -106,7 +106,7 @@ func (s *AuthService) Login(input dto.LoginInput) (*dto.TokenResponse, error) {
 }
 
 func (s *AuthService) RefreshToken(refreshToken string) (*dto.TokenResponse, error) {
-	claims, err := utils.ValidateToken(refreshToken, s.config.JWTSecret)
+	claims, err := utils.ValidateToken(refreshToken, s.config.JWTRefreshSecret)
 	if err != nil {
 		return nil, errors.New("invalid refresh token")
 	}
