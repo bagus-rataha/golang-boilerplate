@@ -3,6 +3,7 @@ package repository
 import (
 	"fiber-api-boilerplate/internal/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -32,9 +33,9 @@ func (r *UserRepository) FindByEmail(email string) (*models.User, error) {
 }
 
 // FindByID finds user by ID
-func (r *UserRepository) FindByID(id uint) (*models.User, error) {
+func (r *UserRepository) FindByID(id uuid.UUID) (*models.User, error) {
 	var user models.User
-	err := r.db.First(&user, id).Error
+	err := r.db.Where("id = ?", id).First(&user).Error
 	if err != nil {
 		return nil, err
 	}

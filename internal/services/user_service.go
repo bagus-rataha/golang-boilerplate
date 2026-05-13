@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/repository"
+
+	"github.com/google/uuid"
 )
 
 type UserService struct {
@@ -14,7 +16,7 @@ func NewUserService(userRepo *repository.UserRepository) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
-func (s *UserService) GetProfile(userID uint) (*dto.UserResponse, error) {
+func (s *UserService) GetProfile(userID uuid.UUID) (*dto.UserResponse, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
 		return nil, errors.New("user not found")
@@ -24,7 +26,7 @@ func (s *UserService) GetProfile(userID uint) (*dto.UserResponse, error) {
 	return &response, nil
 }
 
-func (s *UserService) UpdateProfile(userID uint, input dto.UpdateProfileInput) (*dto.UserResponse, error) {
+func (s *UserService) UpdateProfile(userID uuid.UUID, input dto.UpdateProfileInput) (*dto.UserResponse, error) {
 	user, err := s.userRepo.FindByID(userID)
 	if err != nil {
 		return nil, errors.New("user not found")

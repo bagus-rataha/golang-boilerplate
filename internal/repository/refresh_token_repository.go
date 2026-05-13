@@ -3,6 +3,7 @@ package repository
 import (
 	"fiber-api-boilerplate/internal/models"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -37,7 +38,7 @@ func (r *RefreshTokenRepository) DeleteByToken(token string) error {
 }
 
 // DeleteAllByUserID removes all refresh tokens for a user
-func (r *RefreshTokenRepository) DeleteAllByUserID(userID uint) error {
+func (r *RefreshTokenRepository) DeleteAllByUserID(userID uuid.UUID) error {
 	return r.db.Where("user_id = ?", userID).Delete(&models.RefreshToken{}).Error
 }
 

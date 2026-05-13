@@ -9,6 +9,7 @@ import (
 	"fiber-api-boilerplate/internal/utils"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -137,6 +138,6 @@ func (s *AuthService) Logout(refreshToken string) error {
 }
 
 // LogoutAll revokes every refresh token belonging to the user.
-func (s *AuthService) LogoutAll(userID uint) error {
+func (s *AuthService) LogoutAll(userID uuid.UUID) error {
 	return s.refreshTokenRepo.DeleteAllByUserID(userID)
 }

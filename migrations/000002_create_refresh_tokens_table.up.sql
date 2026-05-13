@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id         BIGSERIAL PRIMARY KEY,
+    id         UUID PRIMARY KEY,
     token      TEXT NOT NULL,
-    user_id    BIGINT NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    user_id    UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE,
     expired_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ
 );

@@ -31,7 +31,7 @@ func JWTProtected(secret string) fiber.Handler {
 		}
 
 		// Set user info to context
-		c.Locals("userID", claims.UserID)
+		utils.SetUserID(c, claims.UserID)
 		c.Locals("email", claims.Email)
 		c.Locals("role", claims.Role)
 

@@ -3,11 +3,13 @@ package dto
 import (
 	"fiber-api-boilerplate/internal/models"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // UserResponse for user API responses
 type UserResponse struct {
-	ID        uint      `json:"id"`
+	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
 	Name      string    `json:"name"`
 	Role      string    `json:"role"`

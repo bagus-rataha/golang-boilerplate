@@ -23,7 +23,10 @@ func NewUserHandler(userService *services.UserService) *UserHandler {
 // @Success 200 {object} utils.Response{data=dto.UserResponse}
 // @Router /users/me [get]
 func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uint)
+	userID, ok := utils.GetUserID(c)
+	if !ok {
+		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid session")
+	}
 
 	user, err := h.userService.GetProfile(userID)
 	if err != nil {
@@ -41,9 +44,12 @@ func (h *UserHandler) GetProfile(c *fiber.Ctx) error {
 // @Success 200 {object} utils.Response{data=dto.UserResponse}
 // @Router /users/me [put]
 func (h *UserHandler) UpdateProfile(c *fiber.Ctx) error {
-	userID := c.Locals("userID").(uint)
-	var input dto.UpdateProfileInput
+	userID, ok := utils.GetUserID(c)
+	if !ok {
+		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid session")
+	}
 
+	var input dto.UpdateProfileInput
 	if err := utils.ParseAndValidate(c, &input); err != nil {
 		return err
 	}

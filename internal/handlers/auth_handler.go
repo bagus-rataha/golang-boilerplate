@@ -118,7 +118,7 @@ func (h *AuthHandler) Logout(c *fiber.Ctx) error {
 // @Success 200 {object} utils.Response
 // @Router /auth/logout-all [post]
 func (h *AuthHandler) LogoutAll(c *fiber.Ctx) error {
-	userID, ok := c.Locals("userID").(uint)
+	userID, ok := utils.GetUserID(c)
 	if !ok {
 		return utils.ErrorResponse(c, fiber.StatusUnauthorized, "Invalid session")
 	}

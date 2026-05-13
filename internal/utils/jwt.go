@@ -5,18 +5,19 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // JWTClaims represents JWT claims
 type JWTClaims struct {
-	UserID uint   `json:"user_id"`
-	Email  string `json:"email"`
-	Role   string `json:"role"`
+	UserID uuid.UUID `json:"user_id"`
+	Email  string    `json:"email"`
+	Role   string    `json:"role"`
 	jwt.RegisteredClaims
 }
 
 // GenerateToken creates JWT token with custom expiration
-func GenerateToken(userID uint, email, role, secret string, expireDuration time.Duration) (string, error) {
+func GenerateToken(userID uuid.UUID, email, role, secret string, expireDuration time.Duration) (string, error) {
 	claims := JWTClaims{
 		UserID: userID,
 		Email:  email,
