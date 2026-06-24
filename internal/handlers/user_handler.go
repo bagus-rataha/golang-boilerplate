@@ -2,17 +2,25 @@ package handlers
 
 import (
 	"fiber-api-boilerplate/internal/dto"
-	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
-type UserHandler struct {
-	userService *services.UserService
+// userService is the business-logic contract UserHandler depends on.
+// Defined consumer-side so it can be satisfied by the real service or a mock.
+type userService interface {
+	GetProfile(userID uuid.UUID) (*dto.UserResponse, error)
+	UpdateProfile(userID uuid.UUID, input dto.UpdateProfileInput) (*dto.UserResponse, error)
+	ListUsers() ([]dto.UserResponse, error)
 }
 
-func NewUserHandler(userService *services.UserService) *UserHandler {
+type UserHandler struct {
+	userService userService
+}
+
+func NewUserHandler(userService userService) *UserHandler {
 	return &UserHandler{userService: userService}
 }
 

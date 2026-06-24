@@ -5,7 +5,6 @@ import (
 	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/models"
-	"fiber-api-boilerplate/internal/repository"
 	"fiber-api-boilerplate/internal/utils"
 	"time"
 
@@ -13,21 +12,40 @@ import (
 	"gorm.io/gorm"
 )
 
+// userRepository is the data-access contract AuthService depends on.
+// Defined consumer-side so it can be satisfied by the real repository
+// (structural typing) or by a mock in tests.
+type userRepository interface {
+	Create(user *models.User) error
+	FindByID(id uuid.UUID) (*models.User, error)
+	FindByEmail(email string) (*models.User, error)
+	Update(user *models.User) error
+	List() ([]models.User, error)
+}
+
+// refreshTokenRepository is the refresh-token data-access contract used by AuthService.
+type refreshTokenRepository interface {
+	Create(rt *models.RefreshToken) error
+	FindByToken(token string) (*models.RefreshToken, error)
+	DeleteByToken(token string) error
+	DeleteAllByUserID(userID uuid.UUID) error
+}
+
 type AuthService struct {
-	userRepo         *repository.UserRepository
-	refreshTokenRepo *repository.RefreshTokenRepository
+	userRepo         userRepository
+	refreshTokenRepo refreshTokenRepository
 	config           *config.Config
 }
 
 func NewAuthService(
-	userRepo *repository.UserRepository,
-	refreshTokenRepo *repository.RefreshTokenRepository,
+	userRepo userRepository,
+	refreshTokenRepo refreshTokenRepository,
 	cfg *config.Config,
 ) *AuthService {
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
-		config:           cfg,
+ 		config:           cfg,
 	}
 }
 
