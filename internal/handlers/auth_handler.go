@@ -3,18 +3,28 @@ package handlers
 import (
 	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
-	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
+// authService is the business-logic contract AuthHandler depends on.
+// Defined consumer-side so it can be satisfied by the real service or a mock.
+type authService interface {
+	Register(input dto.RegisterInput) (*dto.TokenResponse, error)
+	Login(input dto.LoginInput) (*dto.TokenResponse, error)
+	RefreshToken(refreshToken string) (*dto.TokenResponse, error)
+	Logout(refreshToken string) error
+	LogoutAll(userID uuid.UUID) error
+}
+
 type AuthHandler struct {
-	authService *services.AuthService
+	authService authService
 	config      *config.Config
 }
 
-func NewAuthHandler(authService *services.AuthService, cfg *config.Config) *AuthHandler {
+func NewAuthHandler(authService authService, cfg *config.Config) *AuthHandler {
 	return &AuthHandler{authService: authService, config: cfg}
 }
 

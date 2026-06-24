@@ -3,16 +3,24 @@ package services
 import (
 	"errors"
 	"fiber-api-boilerplate/internal/dto"
-	"fiber-api-boilerplate/internal/repository"
+	"fiber-api-boilerplate/internal/models"
 
 	"github.com/google/uuid"
 )
 
-type UserService struct {
-	userRepo *repository.UserRepository
+// userRepositoryForUser is the subset of repository methods UserService needs.
+// Defined consumer-side for testability (satisfied by the real repo or a mock).
+type userRepositoryForUser interface {
+	FindByID(id uuid.UUID) (*models.User, error)
+	Update(user *models.User) error
+	List() ([]models.User, error)
 }
 
-func NewUserService(userRepo *repository.UserRepository) *UserService {
+type UserService struct {
+	userRepo userRepositoryForUser
+}
+
+func NewUserService(userRepo userRepositoryForUser) *UserService {
 	return &UserService{userRepo: userRepo}
 }
 
