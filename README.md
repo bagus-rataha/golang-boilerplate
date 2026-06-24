@@ -131,6 +131,7 @@ Default values (hardcoded):
 - Rate Limiting (prod only)
 - CORS Protection
 - Clean Architecture
+- Unit & integration tests (testify, golang-migrate)
 - Hot Reload (Air)
 
 ## Development vs Production
@@ -148,9 +149,48 @@ Default values (hardcoded):
 
 ## Testing
 
+Tests are split into two kinds:
+
+- **Unit tests** — fast, no database. Cover `utils`, `services` (with mocked
+  repositories), and `handlers` (with mocked services via `fiber.App.Test()`).
+  Each layer is tested in isolation; only the boundary to external resources
+  (the DB) is mocked, using `testify`.
+- **Integration tests** — exercise the `repository` layer against a real
+  PostgreSQL database. Gated behind the `integration` build tag so they never
+  run by accident.
+
+### Unit tests (no DB)
+
 ```bash
 go test ./...
 go test -cover ./...
+```
+
+### Integration tests (real DB)
+
+Requires a dedicated test database and `TEST_DATABASE_URL`:
+
+```bash
+createdb fiber_api_test
+export TEST_DATABASE_URL="postgres://postgres:postgres@localhost:5432/fiber_api_test?sslmode=disable"
+go test -tags=integration ./internal/repository/...
+```
+
+- `TEST_DATABASE_URL` is read by the test helper (URL form, used for both GORM
+  and golang-migrate); it can also be placed in `.env`. URL-encode special
+  characters in the password (e.g. `@` → `%40`). On PowerShell, set it with
+  `$env:TEST_DATABASE_URL="..."`.
+- The schema is applied via golang-migrate, and every table is truncated before
+  each test so cases stay isolated.
+
+### Run everything (unit + integration) with coverage
+
+```bash
+go test -tags=integration -cover ./...
+
+# HTML coverage report
+go test -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
 ```
 
 ## Docker
