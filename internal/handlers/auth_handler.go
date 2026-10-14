@@ -108,9 +108,9 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	result, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
 		if errors.Is(err, services.ErrInvalidRefreshToken) {
-			return utils.ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
+			return utils.ErrorResponse(c, fiber.StatusUnauthorized, services.ErrInvalidRefreshToken.Error())
 		}
-		log.Printf("refresh token: %v", err)
+		log.Printf("refresh failed: %v", err)
 		return utils.ErrorResponse(c, fiber.StatusInternalServerError, "Internal server error")
 	}
 

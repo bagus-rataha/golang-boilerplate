@@ -7,6 +7,7 @@ import (
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -218,4 +219,23 @@ func TestAuthHandler_RefreshToken_Missing(t *testing.T) {
 
 	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 	mockSvc.AssertNotCalled(t, "RefreshToken", mock.Anything)
+}
+
+func TestAuthHandler_RefreshToken_WrappedSentinelNotEchoed(t *testing.T) {
+	mockSvc := new(MockAuthService)
+	handler := NewAuthHandler(mockSvc, newTestConfig())
+	app := newTestAuthApp(handler)
+
+	mockSvc.On("RefreshToken", "old-token").Return(nil,
+		fmt.Errorf("lookup in refresh_tokens table: %w", services.ErrInvalidRefreshToken))
+
+	req := httptest.NewRequest("POST", "/auth/refresh", strings.NewReader(`{"refresh_token":"old-token"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+	var result utils.Response
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.Equal(t, "invalid or revoked refresh token", result.Message)
 }
