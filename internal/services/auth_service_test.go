@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/models"
@@ -135,7 +136,7 @@ func TestLogout_Success(t *testing.T) {
 	userRepo := new(MockUserRepository)
 	rtRepo := new(MockRefreshTokenRepository)
 
-	rtRepo.On("DeleteByToken", "some-token").Return(nil)
+	rtRepo.On("DeleteByToken", "some-token").Return(int64(1), nil)
 
 	svc := newAuthService(userRepo, rtRepo)
 	err := svc.Logout("some-token")
@@ -152,6 +153,130 @@ func TestLogoutAll_Success(t *testing.T) {
 
 	svc := newAuthService(userRepo, rtRepo)
 	err := svc.LogoutAll(userID)
+
+	assert.NoError(t, err)
+}
+
+func newRefreshTokenFor(t *testing.T, userID uuid.UUID) string {
+	t.Helper()
+	token, err := utils.GenerateToken(userID, "test@test.com", "user", "test-refresh-secret", time.Hour)
+	assert.NoError(t, err)
+	return token
+}
+
+func newTestUser() *models.User {
+	return &models.User{
+		BaseModel: models.BaseModel{ID: uuid.Must(uuid.NewV7())},
+		Email:     "test@test.com",
+		Name:      "Test",
+		Role:      "user",
+	}
+}
+
+func TestRefreshToken_Success(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+	user := newTestUser()
+	oldToken := newRefreshTokenFor(t, user.ID)
+
+	rtRepo.On("DeleteByToken", oldToken).Return(int64(1), nil)
+	userRepo.On("FindByID", user.ID).Return(user, nil)
+	rtRepo.On("Create", mock.AnythingOfType("*models.RefreshToken")).Return(nil)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken(oldToken)
+
+	assert.NoError(t, err)
+	assert.NotEmpty(t, result.AccessToken)
+	assert.NotEqual(t, oldToken, result.RefreshToken)
+	rtRepo.AssertExpectations(t)
+}
+
+func TestRefreshToken_AlreadyConsumed(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+	user := newTestUser()
+	oldToken := newRefreshTokenFor(t, user.ID)
+
+	rtRepo.On("DeleteByToken", oldToken).Return(int64(0), nil)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken(oldToken)
+
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrInvalidRefreshToken)
+	userRepo.AssertNotCalled(t, "FindByID", mock.Anything)
+	rtRepo.AssertNotCalled(t, "Create", mock.Anything)
+}
+
+func TestRefreshToken_MalformedToken(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken("not-a-jwt")
+
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrInvalidRefreshToken)
+	rtRepo.AssertNotCalled(t, "DeleteByToken", mock.Anything)
+}
+
+func TestRefreshToken_AccessTokenRejected(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+	accessToken, err := utils.GenerateToken(uuid.Must(uuid.NewV7()), "test@test.com", "user", "test-access-secret", time.Hour)
+	assert.NoError(t, err)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken(accessToken)
+
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrInvalidRefreshToken)
+	rtRepo.AssertNotCalled(t, "DeleteByToken", mock.Anything)
+}
+
+func TestRefreshToken_UserGone(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+	user := newTestUser()
+	oldToken := newRefreshTokenFor(t, user.ID)
+
+	rtRepo.On("DeleteByToken", oldToken).Return(int64(1), nil)
+	userRepo.On("FindByID", user.ID).Return(nil, gorm.ErrRecordNotFound)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken(oldToken)
+
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, ErrInvalidRefreshToken)
+	rtRepo.AssertNotCalled(t, "Create", mock.Anything)
+}
+
+func TestRefreshToken_StoreFailure(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+	user := newTestUser()
+	oldToken := newRefreshTokenFor(t, user.ID)
+	dbErr := errors.New("connection refused")
+
+	rtRepo.On("DeleteByToken", oldToken).Return(int64(0), dbErr)
+
+	svc := newAuthService(userRepo, rtRepo)
+	result, err := svc.RefreshToken(oldToken)
+
+	assert.Nil(t, result)
+	assert.ErrorIs(t, err, dbErr)
+	assert.NotErrorIs(t, err, ErrInvalidRefreshToken)
+}
+
+func TestLogout_AlreadyGone(t *testing.T) {
+	userRepo := new(MockUserRepository)
+	rtRepo := new(MockRefreshTokenRepository)
+
+	rtRepo.On("DeleteByToken", "gone-token").Return(int64(0), nil)
+
+	svc := newAuthService(userRepo, rtRepo)
+	err := svc.Logout("gone-token")
 
 	assert.NoError(t, err)
 }

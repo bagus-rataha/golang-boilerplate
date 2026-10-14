@@ -32,9 +32,12 @@ func (r *RefreshTokenRepository) FindByToken(token string) (*models.RefreshToken
 	return &rt, nil
 }
 
-// DeleteByToken removes a refresh token by its value
-func (r *RefreshTokenRepository) DeleteByToken(token string) error {
-	return r.db.Where("token = ?", token).Delete(&models.RefreshToken{}).Error
+// DeleteByToken removes a refresh token by its value and reports how many rows
+// it removed. Concurrent calls for the same token are serialized by Postgres,
+// so exactly one of them sees 1.
+func (r *RefreshTokenRepository) DeleteByToken(token string) (int64, error) {
+	result := r.db.Where("token = ?", token).Delete(&models.RefreshToken{})
+	return result.RowsAffected, result.Error
 }
 
 // DeleteAllByUserID removes all refresh tokens for a user
