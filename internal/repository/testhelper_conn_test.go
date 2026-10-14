@@ -14,7 +14,7 @@ import (
 func countDBConnections(t *testing.T, db *gorm.DB) int64 {
 	t.Helper()
 	var n int64
-	if err := db.Raw(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`).
+	if err := db.Raw(`SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND backend_type = 'client backend'`).
 		Scan(&n).Error; err != nil {
 		t.Fatal("Failed to count connections:", err)
 	}
@@ -27,8 +27,7 @@ func TestSetupTestDB_ReleasesConnections(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		t.Run(fmt.Sprintf("setup_%d", i), func(t *testing.T) {
-			db := setupTestDB(t)
-			countDBConnections(t, db)
+			setupTestDB(t)
 		})
 	}
 
