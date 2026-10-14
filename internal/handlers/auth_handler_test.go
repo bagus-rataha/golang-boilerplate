@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
+	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
 	"net/http/httptest"
 	"strings"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func newTestConfig() *config.Config {
@@ -162,4 +164,58 @@ func TestAuthHandler_Login_InvalidCredentials(t *testing.T) {
 	resp, _ := app.Test(req)
 
 	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+}
+
+func TestAuthHandler_RefreshToken_Revoked(t *testing.T) {
+	mockSvc := new(MockAuthService)
+	handler := NewAuthHandler(mockSvc, newTestConfig())
+	app := newTestAuthApp(handler)
+
+	mockSvc.On("RefreshToken", "old-token").Return(nil, services.ErrInvalidRefreshToken)
+
+	req := httptest.NewRequest("POST", "/auth/refresh", strings.NewReader(`{"refresh_token":"old-token"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
+	var result utils.Response
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.False(t, result.Success)
+	assert.Equal(t, "invalid or revoked refresh token", result.Message)
+}
+
+func TestAuthHandler_RefreshToken_InternalErrorHidden(t *testing.T) {
+	mockSvc := new(MockAuthService)
+	handler := NewAuthHandler(mockSvc, newTestConfig())
+	app := newTestAuthApp(handler)
+
+	mockSvc.On("RefreshToken", "old-token").Return(nil,
+		errors.New(`ERROR: duplicate key value violates unique constraint "idx_refresh_tokens_token" (SQLSTATE 23505)`))
+
+	req := httptest.NewRequest("POST", "/auth/refresh", strings.NewReader(`{"refresh_token":"old-token"}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
+	var result utils.Response
+	json.NewDecoder(resp.Body).Decode(&result)
+	assert.False(t, result.Success)
+	assert.Equal(t, "Internal server error", result.Message)
+	assert.NotContains(t, result.Message, "SQLSTATE")
+}
+
+func TestAuthHandler_RefreshToken_Missing(t *testing.T) {
+	mockSvc := new(MockAuthService)
+	handler := NewAuthHandler(mockSvc, newTestConfig())
+	app := newTestAuthApp(handler)
+
+	req := httptest.NewRequest("POST", "/auth/refresh", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, _ := app.Test(req)
+
+	assert.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
+	mockSvc.AssertNotCalled(t, "RefreshToken", mock.Anything)
 }
