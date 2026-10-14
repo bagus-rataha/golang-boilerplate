@@ -32,9 +32,11 @@ func (r *RefreshTokenRepository) FindByToken(token string) (*models.RefreshToken
 	return &rt, nil
 }
 
-// DeleteByToken removes a refresh token by its value and reports how many rows
-// it removed. Concurrent calls for the same token are serialized by Postgres,
-// so exactly one of them sees 1.
+// DeleteByToken soft-deletes a refresh token by its value and reports how many
+// rows it marked. Under Postgres' default READ COMMITTED isolation, concurrent
+// calls for the same token are serialized on the row lock, so exactly one of
+// them sees 1; stricter isolation levels make the losers fail with a
+// serialization error instead.
 func (r *RefreshTokenRepository) DeleteByToken(token string) (int64, error) {
 	result := r.db.Where("token = ?", token).Delete(&models.RefreshToken{})
 	return result.RowsAffected, result.Error
