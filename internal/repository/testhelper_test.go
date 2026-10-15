@@ -40,13 +40,28 @@ func setupTestDB(t *testing.T) *gorm.DB {
 		t.Fatal("Failed to connect test DB:", err)
 	}
 
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal("Failed to get test DB handle:", err)
+	}
+	t.Cleanup(func() {
+		if err := sqlDB.Close(); err != nil {
+			t.Errorf("Failed to close test DB: %v", err)
+		}
+	})
+
 	m, err := migrate.New("file://../../migrations", dbURL)
 	if err != nil {
 		t.Fatal("Failed to init migrate:", err)
 	}
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
-		t.Fatal("Failed to run migrations:", err)
+	upErr := m.Up()
+	srcErr, dbErr := m.Close()
+	if upErr != nil && upErr != migrate.ErrNoChange {
+		t.Fatal("Failed to run migrations:", upErr)
+	}
+	if srcErr != nil || dbErr != nil {
+		t.Fatalf("Failed to close migrate: source=%v db=%v", srcErr, dbErr)
 	}
 
 	truncateAllTables(t, db)
