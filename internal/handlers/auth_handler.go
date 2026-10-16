@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"errors"
 	"fiber-api-boilerplate/internal/config"
 	"fiber-api-boilerplate/internal/dto"
+	"fiber-api-boilerplate/internal/services"
 	"fiber-api-boilerplate/internal/utils"
+	"log"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
@@ -88,8 +91,13 @@ func (h *AuthHandler) Login(c *fiber.Ctx) error {
 // RefreshToken godoc
 // @Summary Refresh token
 // @Tags auth
+// @Accept json
+// @Produce json
 // @Param request body dto.RefreshTokenInput false "Refresh token (optional if cookie present)"
 // @Success 200 {object} utils.Response{data=dto.TokenResponse}
+// @Failure 400 {object} utils.Response "Refresh token missing"
+// @Failure 401 {object} utils.Response "Refresh token invalid, expired, already used or revoked"
+// @Failure 500 {object} utils.Response "Internal server error"
 // @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 	refreshToken := h.extractRefreshToken(c)
@@ -99,7 +107,11 @@ func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
 
 	result, err := h.authService.RefreshToken(refreshToken)
 	if err != nil {
-		return utils.ErrorResponse(c, fiber.StatusUnauthorized, err.Error())
+		if errors.Is(err, services.ErrInvalidRefreshToken) {
+			return utils.ErrorResponse(c, fiber.StatusUnauthorized, services.ErrInvalidRefreshToken.Error())
+		}
+		log.Printf("refresh failed: %v", err)
+		return utils.ErrorResponse(c, fiber.StatusInternalServerError, "Internal server error")
 	}
 
 	utils.SetRefreshTokenCookie(c, result.RefreshToken, h.config.JWTRefreshExpire, h.config.IsProduction())

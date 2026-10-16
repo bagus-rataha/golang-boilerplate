@@ -54,17 +54,9 @@ func (m *MockRefreshTokenRepository) Create(rt *models.RefreshToken) error {
 	return args.Error(0)
 }
 
-func (m *MockRefreshTokenRepository) FindByToken(token string) (*models.RefreshToken, error) {
+func (m *MockRefreshTokenRepository) DeleteByToken(token string) (int64, error) {
 	args := m.Called(token)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*models.RefreshToken), args.Error(1)
-}
-
-func (m *MockRefreshTokenRepository) DeleteByToken(token string) error {
-	args := m.Called(token)
-	return args.Error(0)
+	return args.Get(0).(int64), args.Error(1)
 }
 
 func (m *MockRefreshTokenRepository) DeleteAllByUserID(userID uuid.UUID) error {

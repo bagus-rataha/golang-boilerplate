@@ -13,9 +13,8 @@ definitions:
   dto.RefreshTokenInput:
     properties:
       refresh_token:
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
         type: string
-    required:
-    - refresh_token
     type: object
   dto.RegisterInput:
     properties:
@@ -59,7 +58,7 @@ definitions:
       email:
         type: string
       id:
-        type: integer
+        type: string
       name:
         type: string
       role:
@@ -68,6 +67,7 @@ definitions:
   utils.Response:
     properties:
       data: {}
+      errors: {}
       message:
         type: string
       success:
@@ -102,15 +102,40 @@ paths:
       summary: Login user
       tags:
       - auth
+  /auth/logout:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      summary: Logout current session
+      tags:
+      - auth
+  /auth/logout-all:
+    post:
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/utils.Response'
+      security:
+      - BearerAuth: []
+      summary: Logout from all devices
+      tags:
+      - auth
   /auth/refresh:
     post:
+      consumes:
+      - application/json
       parameters:
-      - description: Refresh token
+      - description: Refresh token (optional if cookie present)
         in: body
         name: request
-        required: true
         schema:
           $ref: '#/definitions/dto.RefreshTokenInput'
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
@@ -121,6 +146,18 @@ paths:
                 data:
                   $ref: '#/definitions/dto.TokenResponse'
               type: object
+        "400":
+          description: Refresh token missing
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "401":
+          description: Refresh token invalid, expired, already used or revoked
+          schema:
+            $ref: '#/definitions/utils.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/utils.Response'
       summary: Refresh token
       tags:
       - auth

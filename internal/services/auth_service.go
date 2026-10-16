@@ -6,6 +6,7 @@ import (
 	"fiber-api-boilerplate/internal/dto"
 	"fiber-api-boilerplate/internal/models"
 	"fiber-api-boilerplate/internal/utils"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -26,10 +27,14 @@ type userRepository interface {
 // refreshTokenRepository is the refresh-token data-access contract used by AuthService.
 type refreshTokenRepository interface {
 	Create(rt *models.RefreshToken) error
-	FindByToken(token string) (*models.RefreshToken, error)
-	DeleteByToken(token string) error
+	DeleteByToken(token string) (int64, error)
 	DeleteAllByUserID(userID uuid.UUID) error
 }
+
+// ErrInvalidRefreshToken covers every refresh token that cannot be exchanged:
+// malformed, expired, signed with the wrong secret, already used or revoked,
+// or belonging to a user that no longer exists.
+var ErrInvalidRefreshToken = errors.New("invalid or revoked refresh token")
 
 type AuthService struct {
 	userRepo         userRepository
@@ -45,7 +50,7 @@ func NewAuthService(
 	return &AuthService{
 		userRepo:         userRepo,
 		refreshTokenRepo: refreshTokenRepo,
- 		config:           cfg,
+		config:           cfg,
 	}
 }
 
@@ -124,26 +129,29 @@ func (s *AuthService) Login(input dto.LoginInput) (*dto.TokenResponse, error) {
 	return s.generateAndStoreTokens(user)
 }
 
+// RefreshToken exchanges a refresh token for a new pair. Deleting the stored
+// row is the consumption step: only the caller whose delete removed it may
+// continue, so concurrent requests with the same token cannot all succeed.
 func (s *AuthService) RefreshToken(refreshToken string) (*dto.TokenResponse, error) {
 	claims, err := utils.ValidateToken(refreshToken, s.config.JWTRefreshSecret)
 	if err != nil {
-		return nil, errors.New("invalid refresh token")
+		return nil, ErrInvalidRefreshToken
 	}
 
-	if _, err := s.refreshTokenRepo.FindByToken(refreshToken); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, errors.New("invalid or revoked refresh token")
-		}
-		return nil, err
+	deleted, err := s.refreshTokenRepo.DeleteByToken(refreshToken)
+	if err != nil {
+		return nil, fmt.Errorf("consume refresh token: %w", err)
+	}
+	if deleted == 0 {
+		return nil, ErrInvalidRefreshToken
 	}
 
 	user, err := s.userRepo.FindByID(claims.UserID)
 	if err != nil {
-		return nil, errors.New("user not found")
-	}
-
-	if err := s.refreshTokenRepo.DeleteByToken(refreshToken); err != nil {
-		return nil, err
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrInvalidRefreshToken
+		}
+		return nil, fmt.Errorf("load user for refresh: %w", err)
 	}
 
 	return s.generateAndStoreTokens(user)
@@ -152,7 +160,8 @@ func (s *AuthService) RefreshToken(refreshToken string) (*dto.TokenResponse, err
 // Logout revokes a single refresh token. Idempotent — it does not error if
 // the token was already absent from the store.
 func (s *AuthService) Logout(refreshToken string) error {
-	return s.refreshTokenRepo.DeleteByToken(refreshToken)
+	_, err := s.refreshTokenRepo.DeleteByToken(refreshToken)
+	return err
 }
 
 // LogoutAll revokes every refresh token belonging to the user.

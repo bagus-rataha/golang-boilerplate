@@ -45,3 +45,24 @@ func TestValidateToken_Expired(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func TestGenerateToken_UniqueForIdenticalInput(t *testing.T) {
+	userID := uuid.Must(uuid.NewV7())
+
+	first, err := GenerateToken(userID, "test@test.com", "user", "secret", time.Hour)
+	assert.NoError(t, err)
+	second, err := GenerateToken(userID, "test@test.com", "user", "secret", time.Hour)
+	assert.NoError(t, err)
+
+	assert.NotEqual(t, first, second)
+}
+
+func TestValidateToken_HasUUIDTokenID(t *testing.T) {
+	token, _ := GenerateToken(uuid.Must(uuid.NewV7()), "test@test.com", "user", "secret", time.Hour)
+
+	claims, err := ValidateToken(token, "secret")
+
+	assert.NoError(t, err)
+	_, parseErr := uuid.Parse(claims.ID)
+	assert.NoError(t, parseErr)
+}

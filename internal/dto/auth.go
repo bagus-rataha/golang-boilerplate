@@ -16,7 +16,7 @@ type LoginInput struct {
 // RefreshTokenInput for token refresh.
 // Optional in body — handler reads cookie first and falls back to this field.
 type RefreshTokenInput struct {
-	RefreshToken string `json:"refresh_token"`
+	RefreshToken string `json:"refresh_token" example:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."`
 }
 
 // TokenResponse for auth responses
